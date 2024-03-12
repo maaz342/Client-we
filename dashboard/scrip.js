@@ -60,7 +60,7 @@ closeCart.addEventListener('click', () => {
             else if (positionClick.classList.contains('buy')) {
                 buyNow(event);
             }
-            else if(positionClick.classList.contains('checkout')){
+            else if(positionClick.classList.contains('')){
                 checkOut(event);
             }
     })
@@ -80,9 +80,14 @@ const addToCart = (product_id) => {
         cart[positionThisProductInCart].quantity = cart[positionThisProductInCart].quantity + 1;
     }
     addCartToHTML();
-    addCartToMemory();
 }
-
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        const userUID = user.uid;
+        addCartToHTML(userUID); 
+    
+    }
+});
 // *********************** Local Storage *****************************// 
 var addCartToMemory = () => {
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -188,8 +193,6 @@ function sign() {
           .currentUser.sendEmailVerification()
           .then(() => {
             alert("Email sent Successfully..");
-            window.location.href='dashboard'
-
           });
       })
       .catch((error) => {
@@ -197,8 +200,7 @@ function sign() {
         var errorMessage = error.message;
         console.log(errorMessage);
       });
-
-    }
+  }
   
   // ***********************Login Auth*******************************
   
@@ -211,10 +213,6 @@ function sign() {
         // Signed in
         var user = userCredential.user;
         console.log(user);
-        alert("LOGGED IN")
-        window.location.href='dashboard'
-
-
       })
       .catch((error) => {
         var errorCode = error.code;
@@ -339,6 +337,8 @@ function order() {
     city.value = '';
     address.value = '';
     province.value = '';
+    cart=[];
+    addCartToHTML();
 }
 
 
@@ -351,14 +351,44 @@ function closeBuyNow() {
 }
 
 // ********************** checkout(event)*****************************//
+function checkOt(event){
+var button = event.target;
 
-function checkOut(event) {
-    var button = event.target;
-    var title = button.dataset.title;
-    var price = button.dataset.price;
-    var quantity = button.dataset.quantity;
-    document.getElementById('buyNow').style.display = 'block';
-    var itemDetails = {
+// Retrieve the item details from the array
+var items = [];
+var names = document.getElementsByClassName('name');
+var totalPrices = document.getElementsByClassName("totalPrice");
+var quantities = document.getElementsByClassName("quantity");
+
+for (var i = 0; i < names.length; i++) {
+    var title = names[i].innerText;
+    var price = totalPrices[i].innerText;
+    var quantity = quantities[i].innerText;
+
+    items.push({ title: title, price: price, quantity: quantity });
+}
+
+// Assuming you want to pass the items array to the buyNow function
+var product = {
+    items: items
+};
+
+var key = Math.random() * 2345678;
+
+firebase.database().ref("product/" + Math.round(key)).set(product)
+    .then(function() {
+        // If data is successfully saved, display success message
+        alert("You bought the item successfully!");
+    })
+    .catch(function(error) {
+        // If an error occurs while saving data, log the error
+        console.error("Error buying item: ", error);
+        alert("An error occurred while buying the item. Please try again later.");
+    });
+// Show the buyNow modal
+document.getElementById('buyNow').style.display = 'block';
+
+   var itemDetails = {
         user: {
             name: name,
             lastname: lastname,
@@ -367,21 +397,11 @@ function checkOut(event) {
             address: address,
             province: province,
         },
-        product: {
-            title: title,
-            price: price,
-            quantity: quantity,
-        },
-    };
-
-    var key = Math.random() * 2345678;
-
-    firebase.database().ref("Items/user" + Math.round(key)).set(itemDetails);
-    alert("You bought the item successfully!");
+    }
+   
 }
+ 
 
-
-//********************* tooast msg **********************//
 
 function addtocart() {
     body.classList.toggle('showCart');
